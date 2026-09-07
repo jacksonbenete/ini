@@ -12,35 +12,6 @@ import (
 	"strings"
 )
 
-type ScanStep int
-
-const (
-	scanContinue ScanStep = iota // read next line
-	scanSection                  // found INI [section]
-	scanKey                      // found INI key=
-	scanValue                    // found INI =value
-	scanEnd                      // finish scanning
-	scanError                    // error found
-)
-
-func (s ScanStep) String() string {
-	switch s {
-	case scanContinue:
-		return "ScanContinue"
-	case scanSection:
-		return "ScanSelection"
-	case scanKey:
-		return "ScanKey"
-	case scanValue:
-		return "ScanValue"
-	case scanEnd:
-		return "ScanEnd"
-	case scanError:
-		return "ScanError"
-	}
-	return ""
-}
-
 func getDefaultOpts() DecodeOptions {
 	return DecodeOptions{
 		CommentSyntax:      []byte{';'},
@@ -181,11 +152,9 @@ func (d *decodeState) unmarshalStruct(v any) error {
 			continue
 		}
 
-		// TODO Throw error or print warning?
 		value, ok := d.decodedSections[tag]
 		if !ok {
-			// If not found, could still be on root.
-			//continue
+			// If not found, could still be on root. Continue.
 			value = d.decodedSections[d.nextSection]
 		}
 
@@ -229,10 +198,16 @@ func setValue(dst reflect.Value, src any) error {
 			if !ok {
 				return fmt.Errorf("expected string 'true' or 'false', got %T", src)
 			}
-			sb, err := strconv.ParseBool(s)
-			if err != nil {
-				return err
+
+			sb := false
+
+			switch s {
+			case "true", "t", "yes", "y", "on":
+				sb = true
+			case "false", "f", "no", "n", "off":
+				sb = false
 			}
+
 			b = sb
 		}
 		dst.SetBool(b)
