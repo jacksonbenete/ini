@@ -88,8 +88,8 @@ func (d *decodeState) unmarshal(v any) error {
 				continue
 			}
 			// Found key/value.
-			matchKey := matchKV[0]
-			matchVal := matchKV[1]
+			matchKey := strings.TrimSpace(matchKV[0])
+			matchVal := strings.TrimSpace(matchKV[1])
 
 			m := d.decodedSections[d.nextSection]
 

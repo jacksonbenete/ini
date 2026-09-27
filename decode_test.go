@@ -269,3 +269,26 @@ itemsnap = false`, expectedAutoLogin, expectedVsync, expectedBgmVolume)
 		t.Fatalf("expected %v, got %v", expectedVsync, cfg.Render.VSync)
 	}
 }
+
+type UIConfig struct {
+	WindowDragMode string `ini:"window_drag_mode"`
+}
+
+type SomeConfig struct {
+	UI UIConfig `ini:"ui"`
+}
+
+func TestConfigWithSpace(t *testing.T) {
+	file := []byte(`[ui]
+window_drag_mode = drop
+`)
+
+	var cfg SomeConfig
+	if err := Unmarshal(file, &cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	if cfg.UI.WindowDragMode != "drop" {
+		t.Fatal("expected drop, got ", cfg.UI.WindowDragMode)
+	}
+}
