@@ -242,9 +242,77 @@ func setValue(dst reflect.Value, src any) error {
 		}
 		dst.SetFloat(n)
 
+	case reflect.Slice:
+		s, ok := src.(string)
+		if !ok {
+			return fmt.Errorf("expected a comma separated list written in a string format to get parsed, got %T", src)
+		}
+		list := strings.Split(s, ",")
+		trimmed := make([]string, 0)
+		for _, l := range list {
+			trimmed = append(trimmed, strings.TrimSpace(l))
+		}
+		if len(trimmed) == 0 {
+			return fmt.Errorf("expected a comma separated list, got empty: %v", src)
+		}
+		err := setSliceValue(dst, trimmed)
+		if err != nil {
+			return err
+		}
+
 	default:
 		return fmt.Errorf("unsupported type: %s", dst.Type())
 	}
 
+	return nil
+}
+
+func setSliceValue(dst reflect.Value, src []string) error {
+	list := reflect.MakeSlice(dst.Type(), 0, len(src))
+	t := dst.Type().Elem()
+	innerType := dst.Type().Elem().Kind()
+
+	for _, s := range src {
+		var parsed any
+
+		switch innerType {
+		case reflect.String:
+			parsed = s
+
+		case reflect.Bool:
+			sb := false
+			switch s {
+			case "true", "t", "yes", "y", "on":
+				sb = true
+			case "false", "f", "no", "n", "off":
+				sb = false
+			}
+
+			parsed = sb
+
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			res, err := strconv.Atoi(s)
+			if err != nil {
+				return fmt.Errorf("cannot convert list to int: %v", src)
+			}
+			parsed = res
+
+		case reflect.Float32, reflect.Float64:
+			res, err := strconv.ParseFloat(s, 64)
+			if err != nil {
+				return fmt.Errorf("cannot convert list to float: %v", src)
+			}
+			parsed = res
+
+		default:
+			return fmt.Errorf("cannot convert list of unknown type: %v", src)
+		}
+
+		val := reflect.ValueOf(parsed)
+		con := val.Convert(t)
+		list = reflect.Append(list, con)
+	}
+
+	dst.Set(list)
 	return nil
 }

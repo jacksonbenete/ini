@@ -2,6 +2,7 @@ package ini
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 )
 
@@ -290,5 +291,36 @@ window_drag_mode = drop
 
 	if cfg.UI.WindowDragMode != "drop" {
 		t.Fatal("expected drop, got ", cfg.UI.WindowDragMode)
+	}
+}
+
+type TestListsConfig struct {
+	Int []int    `ini:"integers"`
+	Str []string `ini:"strings"`
+}
+
+func TestLists(t *testing.T) {
+	data := `
+integers=1,2,3,4
+strings= foo,bar,gofmt
+`
+
+	var cfg TestListsConfig
+	if err := Unmarshal([]byte(data), &cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	totalExpected := 10
+	total := 0
+	for _, i := range cfg.Int {
+		total += i
+	}
+
+	if totalExpected != total {
+		t.Fatal("expected", totalExpected, "got", total)
+	}
+
+	if len(cfg.Str) != 3 && !slices.Contains(cfg.Str, "gofmt") {
+		t.Fatal("expected slice len 3 and gofmt as element")
 	}
 }
